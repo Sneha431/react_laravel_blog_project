@@ -1,24 +1,43 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Editor from "react-simple-wysiwyg";
 import { toast } from "react-toastify";
 //import { stripHtml } from "string-strip-html";
-const CreateBlogs = () => {
+const BlogEdit = () => {
+  const { id } = useParams();
   const [html, setHtml] = useState("");
   const [imageId, setimageId] = useState("");
+  const [blog, setblogdata] = useState(null);
   const navigate = useNavigate();
 
   const {
     register,
     handleSubmit,
-
+    reset,
     formState: { errors },
   } = useForm();
   function onChange(e) {
     setHtml(e.target.value);
   }
+  const fetchsingleblog = async (id) => {
+    const res = await fetch(`http://127.0.0.1:8000/api/blogs/` + id);
+    const response = await res.json();
+    console.log(response);
+    if (response.status == true && response.data != []) {
+      setblogdata(response.data);
+      console.log(response.data);
+      toast.success(response.message);
+      reset(response.data); //// Populate form fields with API data
+      setHtml(response.data.description);
+    } else {
+      toast.error(response.message);
+    }
+  };
 
+  useEffect(() => {
+    fetchsingleblog(id);
+  }, [id]);
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     console.log(file);
@@ -49,8 +68,8 @@ const CreateBlogs = () => {
     // const newData = { ...data, "description": html.result, "image_id": imageId };
     const newData = { ...data, description: html, image_id: imageId };
     console.log(newData);
-    const res = await fetch("http://127.0.0.1:8000/api/blogs", {
-      method: "POST",
+    const res = await fetch("http://127.0.0.1:8000/api/blogs/" + id, {
+      method: "PUT",
       headers: {
         "Content-type": "application/json",
       },
@@ -87,10 +106,15 @@ const CreateBlogs = () => {
       });
     }
   };
+  const showImage = (img) => {
+    return img
+      ? "http://127.0.0.1:8000/uploads/blogs/" + img
+      : "https://placehold.co/640x480";
+  };
   return (
     <div className="container">
       <div className="d-flex justify-content-between pt-5 mb-4">
-        <h4>Create Blogs</h4>
+        <h4>Edit Blogs</h4>
         <a href="/" className="btn btn-dark">
           Back
         </a>
@@ -158,6 +182,15 @@ const CreateBlogs = () => {
                 id="image"
                 className="form-control"
               />
+              <div className="mt-2">
+                {blog && (
+                  <img
+                    src={showImage(blog.image)}
+                    alt={blog.title}
+                    className="w-50"
+                  />
+                )}
+              </div>
             </div>
             <div className="mb-3">
               <label className="form-label">Author</label>
@@ -174,7 +207,7 @@ const CreateBlogs = () => {
               )}
             </div>
             <button type="submit" className="btn btn-dark">
-              Create
+              Update
             </button>
           </div>
         </form>
@@ -183,4 +216,4 @@ const CreateBlogs = () => {
   );
 };
 
-export default CreateBlogs;
+export default BlogEdit;
